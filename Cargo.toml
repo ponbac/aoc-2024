@@ -1,8 +1,7 @@
-[package]
-name = "aoc-day-1"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = ["day-*"]
 
-[dependencies]
+[workspace.dependencies]
 itertools = "0.13.0"
 rayon = "1.10.0"
