@@ -3,6 +3,7 @@ work day:
     cargo watch -q -x "run -p day-{{day}}"
 new day:
     cargo new day-{{day}}
+    just input {{day}}
 run day:
     cargo run -p day-{{day}} --release
 
