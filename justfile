@@ -1,4 +1,4 @@
-# Use `just work day-01` to work on the specific binary for a specific day's problems
+# Use `just work 01` to work on the specific binary for a specific day's problems
 work day:
     cargo watch -q -x "run -p day-{{day}}"
 new day:
