@@ -1,11 +1,13 @@
 # Use `just work 01` to work on the specific binary for a specific day's problems
 work day:
     cargo watch -q -x "run -p day-{{day}}"
+work-release day:
+    cargo watch -q -x "run -p day-{{day}} --release"
 new day:
     cargo new day-{{day}}
     just input {{day}}
 run day:
-    cargo run -p day-{{day}} --release
+    RUSTFLAGS='-C target-cpu=native' cargo run -p day-{{day}} --release
 
 # You can find SESSION by using Chrome tools:
 # 1) Go to https://adventofcode.com/2022/day/1/input
