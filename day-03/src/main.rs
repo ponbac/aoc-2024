@@ -8,15 +8,12 @@ fn main() {
 
     let sum: i32 = re_split
         .split(INPUT)
-        .zip(
-            std::iter::once(true)
-                .chain(re_split.find_iter(INPUT).map(|m| m.as_str() == "do()")),
-        )
+        .zip(std::iter::once(true).chain(re_split.find_iter(INPUT).map(|m| m.as_str() == "do()")))
         .filter_map(|(part, enabled)| {
             if !enabled {
                 return None;
             }
-            
+
             Some(
                 re_mul
                     .captures_iter(part)
