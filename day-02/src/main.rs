@@ -1,66 +1,42 @@
-use std::time::Instant;
-
 const INPUT: &str = include_str!("../input1.txt");
 
 fn main() {
-    let start_time = Instant::now();
-    day2();
-    let end_time = Instant::now();
-    println!("Time taken: {:?}", end_time.duration_since(start_time));
-}
-
-fn day2() {
-    let lines = INPUT.trim().lines();
-
-    let reports: Vec<Vec<i32>> = lines
+    let n_valid_reports = INPUT
+        .trim()
+        .lines()
         .map(|line| {
             line.split_whitespace()
                 .map(|num| num.parse::<i32>().unwrap())
-                .collect()
+                .collect::<Vec<_>>()
         })
-        .collect();
-
-    let n_valid_reports = reports
-        .iter()
         .filter(|report| {
-            if is_valid_report(report) {
-                return true;
-            }
-
-            for i in 0..report.len() {
-                let mut variation = report.to_vec();
-                variation.remove(i);
-                if is_valid_report(&variation) {
-                    return true;
-                }
-            }
-            false
+            is_valid_report(report)
+                || (0..report.len())
+                    .map(|i| {
+                        let mut nums = report.to_vec();
+                        nums.remove(i);
+                        nums
+                    })
+                    .any(|variation| is_valid_report(&variation))
         })
         .count();
-
     println!("Number of valid reports: {}", n_valid_reports);
 }
 
 fn is_valid_report(report: &[i32]) -> bool {
-    let first_level = report[0];
-    report
-        .iter()
-        .skip(1)
-        .try_fold(
-            (first_level, None),
-            |(prev_level, is_increasing), level| -> Result<(i32, Option<bool>), ()> {
-                let diff = (level - prev_level).abs();
-                if !(1..=3).contains(&diff) {
-                    return Err(());
-                }
+    let mut direction = None;
+    for window in report.windows(2) {
+        if !(1..=3).contains(&(window[1] - window[0]).abs()) {
+            return false;
+        }
 
-                let curr_is_increasing = *level > prev_level;
-                if is_increasing.is_some() && is_increasing.unwrap() != curr_is_increasing {
-                    return Err(());
-                }
+        let is_increasing = window[1] > window[0];
+        match direction {
+            None => direction = Some(is_increasing),
+            Some(dir) if dir != is_increasing => return false,
+            _ => {}
+        }
+    }
 
-                Ok((*level, Some(curr_is_increasing)))
-            },
-        )
-        .is_ok()
+    true
 }
