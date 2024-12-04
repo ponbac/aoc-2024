@@ -1,19 +1,4 @@
-use std::fmt;
-
 const INPUT: &str = include_str!("../input1.txt");
-
-const EXAMPLE: &str = r#"
-MMMSXXMASM
-MSAMXMSMSA
-AMXSXMAAMM
-MSAMASMSMX
-XMASAMXAMM
-XXAMMXXAMA
-SMSMSASXSS
-SAXAMASAAA
-MAMMMXMMMM
-MXMXAXMASX
-"#;
 
 struct Grid {
     rows: Vec<Vec<char>>,
@@ -42,10 +27,6 @@ impl Grid {
             search_pattern_reverse: search_pattern.iter().rev().cloned().collect(),
             search_length: search_pattern.len(),
         }
-    }
-
-    fn get(&self, x: usize, y: usize) -> char {
-        self.rows[y][x]
     }
 
     fn find_horizontal(&self, x: usize, y: usize) -> (bool, Vec<(usize, usize)>) {
@@ -144,14 +125,12 @@ impl Grid {
     }
 
     fn find_cross(&self, x: usize, y: usize) -> (bool, Vec<(usize, usize)>) {
-        if x + 2 >= self.width || y + 2 >= self.height {
+        if x + self.search_length > self.width || y + self.search_length > self.height {
             return (false, vec![]);
         }
 
         let diagonal_down = self.find_diagonal_top_left_bottom_right(x, y);
-        println!("{:?}", diagonal_down);
         let diagonal_up = self.find_diagonal_bottom_left_top_right(x, y + 2);
-        println!("{:?}", diagonal_up);
 
         let count = diagonal_down.0 as usize + diagonal_up.0 as usize;
         (
@@ -162,51 +141,25 @@ impl Grid {
 }
 
 fn main() {
-    let grid = Grid::new(INPUT, vec!['M', 'A', 'S']);
-    // println!("{}", grid);
-
-    let mut found_grid: Vec<Vec<bool>> = vec![vec![false; grid.width]; grid.height];
+    let grid_1 = Grid::new(INPUT, vec!['X', 'M', 'A', 'S']);
+    let grid_2 = Grid::new(INPUT, vec!['M', 'A', 'S']);
 
     let mut found = 0;
-    let mut found_cross = 0;
-    for y in 0..grid.height {
-        for x in 0..grid.width {
-            // let (count, coords) = grid.find_all(x, y);
-            // found += count;
-            // for (cx, cy) in coords {
-            //     found_grid[cy][cx] = true;
-            // }
-            let (cross, coords) = grid.find_cross(x, y);
-            found_cross += cross as usize;
-            for (cx, cy) in coords {
-                found_grid[cy][cx] = true;
-            }
+    for y in 0..grid_1.height {
+        for x in 0..grid_1.width {
+            let (count, _) = grid_1.find_all(x, y);
+            found += count;
         }
     }
 
-    println!(
-        "{}",
-        found_grid
-            .iter()
-            .enumerate()
-            .map(|(y, row)| row
-                .iter()
-                .enumerate()
-                .map(|(x, b)| if *b { grid.get(x, y) } else { '.' })
-                .collect::<String>())
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
+    let mut found_cross = 0;
+    for y in 0..grid_2.height {
+        for x in 0..grid_2.width {
+            let (cross, _) = grid_2.find_cross(x, y);
+            found_cross += cross as usize;
+        }
+    }
 
     println!("{}", found);
     println!("{}", found_cross);
-}
-
-impl fmt::Display for Grid {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for row in &self.rows {
-            writeln!(f, "{}", row.iter().collect::<String>())?;
-        }
-        Ok(())
-    }
 }
