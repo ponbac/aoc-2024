@@ -51,6 +51,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "day-04"
+version = "0.1.0"
+
+[[package]]
 name = "indent_write"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
