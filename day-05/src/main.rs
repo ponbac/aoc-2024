@@ -37,11 +37,10 @@ fn main() {
         .map(|update| middle_value(update))
         .sum();
     let invalid_updates_sum: u32 = invalid_updates
-        .iter()
-        .map(|update| {
-            let mut sorted = update.clone();
-            sort_update(&rules, &mut sorted);
-            middle_value(&sorted)
+        .into_iter()
+        .map(|mut update| {
+            sort_update(&rules, &mut update);
+            middle_value(&update)
         })
         .sum();
 
