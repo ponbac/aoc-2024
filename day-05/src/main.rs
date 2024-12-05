@@ -1,36 +1,6 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 const INPUT: &str = include_str!("../input1.txt");
-const EXAMPLE: &str = r#"
-47|53
-97|13
-97|61
-97|47
-75|29
-61|13
-75|53
-29|13
-97|29
-53|29
-61|53
-97|53
-61|29
-47|13
-75|47
-97|75
-47|61
-75|61
-47|29
-75|13
-53|13
-
-75,47,61,53,29
-97,61,53,29,13
-75,29,13
-75,97,47,61,53
-61,13,29
-97,13,75,29,47
-"#;
 
 fn main() {
     let (rules_input, updates_input) = INPUT.trim().split_once("\n\n").unwrap();
@@ -43,42 +13,47 @@ fn main() {
                 .push(after.to_string());
             acc
         });
-
-    let updates: Vec<Vec<String>> = updates_input
+    let (valid_updates, invalid_updates): (Vec<Vec<String>>, Vec<Vec<String>>) = updates_input
         .lines()
-        .map(|line| line.split(',').map(|s| s.to_string()).collect())
-        .collect();
+        .map(|line| {
+            line.split(',')
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>()
+        })
+        .fold(
+            (Vec::new(), Vec::new()),
+            |(mut valid, mut invalid), update| {
+                if is_valid_update(&rules, &update) {
+                    valid.push(update);
+                } else {
+                    invalid.push(update);
+                }
+                (valid, invalid)
+            },
+        );
 
-    let valid_updates_sum: u32 = updates
+    let valid_updates_sum: u32 = valid_updates
         .iter()
-        .filter(|update| is_valid_update(&rules, update))
-        .map(|update| update[update.len() / 2].parse::<u32>().unwrap())
+        .map(|update| middle_value(update))
         .sum();
-    println!("{}", valid_updates_sum);
-
-    let invalid_updates_sum: u32 = updates
+    let invalid_updates_sum: u32 = invalid_updates
         .iter()
-        .filter(|update| !is_valid_update(&rules, update))
         .map(|update| {
             let mut sorted = update.clone();
             sort_update(&rules, &mut sorted);
-            sorted[sorted.len() / 2].parse::<u32>().unwrap()
+            middle_value(&sorted)
         })
         .sum();
-    println!("{}", invalid_updates_sum);
+
+    println!("Part 1: {}", valid_updates_sum);
+    println!("Part 2: {}", invalid_updates_sum);
 }
 
 fn is_valid_update(rules: &HashMap<String, Vec<String>>, update: &[String]) -> bool {
-    let reversed_update = update.iter().rev().collect::<Vec<&String>>();
-    !reversed_update.iter().enumerate().any(|(i, current)| {
+    !update.iter().enumerate().any(|(i, current)| {
         rules
-            .get(*current)
-            .map(|afters| {
-                reversed_update
-                    .iter()
-                    .skip(i + 1)
-                    .any(|next| afters.contains(next))
-            })
+            .get(current)
+            .map(|afters| update.iter().take(i).any(|prev| afters.contains(prev)))
             .unwrap_or(false)
     })
 }
@@ -86,11 +61,15 @@ fn is_valid_update(rules: &HashMap<String, Vec<String>>, update: &[String]) -> b
 fn sort_update(rules: &HashMap<String, Vec<String>>, update: &mut [String]) {
     update.sort_by(|a, b| {
         if rules.get(a).map_or(false, |afters| afters.contains(b)) {
-            std::cmp::Ordering::Less
+            Ordering::Less
         } else if rules.get(b).map_or(false, |afters| afters.contains(a)) {
-            std::cmp::Ordering::Greater
+            Ordering::Greater
         } else {
-            b.cmp(a)
+            Ordering::Equal
         }
     });
+}
+
+fn middle_value(update: &[String]) -> u32 {
+    update[update.len() / 2].parse::<u32>().unwrap()
 }
