@@ -34,15 +34,13 @@ const EXAMPLE: &str = r#"
 
 fn main() {
     let (rules_input, updates_input) = INPUT.trim().split_once("\n\n").unwrap();
-    // println!("{}", rules_input);
-    // println!("{}", updates_input);
 
     let rules: HashMap<String, Vec<String>> =
         rules_input.lines().fold(HashMap::new(), |mut acc, line| {
-            let (from, to) = line.split_once("|").unwrap();
-            acc.entry(from.to_string())
+            let (id, after) = line.split_once("|").unwrap();
+            acc.entry(id.to_string())
                 .or_default()
-                .push(to.to_string());
+                .push(after.to_string());
             acc
         });
 
@@ -56,8 +54,18 @@ fn main() {
         .filter(|update| is_valid_update(&rules, update))
         .map(|update| update[update.len() / 2].parse::<u32>().unwrap())
         .sum();
-
     println!("{}", valid_updates_sum);
+
+    let invalid_updates_sum: u32 = updates
+        .iter()
+        .filter(|update| !is_valid_update(&rules, update))
+        .map(|update| {
+            let mut sorted = update.clone();
+            sort_update(&rules, &mut sorted);
+            sorted[sorted.len() / 2].parse::<u32>().unwrap()
+        })
+        .sum();
+    println!("{}", invalid_updates_sum);
 }
 
 fn is_valid_update(rules: &HashMap<String, Vec<String>>, update: &[String]) -> bool {
@@ -65,12 +73,24 @@ fn is_valid_update(rules: &HashMap<String, Vec<String>>, update: &[String]) -> b
     !reversed_update.iter().enumerate().any(|(i, current)| {
         rules
             .get(*current)
-            .map(|befores| {
+            .map(|afters| {
                 reversed_update
                     .iter()
                     .skip(i + 1)
-                    .any(|next| befores.contains(next))
+                    .any(|next| afters.contains(next))
             })
             .unwrap_or(false)
     })
+}
+
+fn sort_update(rules: &HashMap<String, Vec<String>>, update: &mut [String]) {
+    update.sort_by(|a, b| {
+        if rules.get(a).map_or(false, |afters| afters.contains(b)) {
+            std::cmp::Ordering::Less
+        } else if rules.get(b).map_or(false, |afters| afters.contains(a)) {
+            std::cmp::Ordering::Greater
+        } else {
+            b.cmp(a)
+        }
+    });
 }
