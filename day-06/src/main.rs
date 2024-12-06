@@ -41,14 +41,6 @@ impl Guard {
         self.visited.insert((self.start_position, Direction::Up));
         self.direction = Direction::Up;
     }
-
-    fn n_visited(&self) -> usize {
-        self.visited
-            .iter()
-            .map(|((x, y), _)| (*x, *y))
-            .collect::<HashSet<_>>()
-            .len()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -141,11 +133,16 @@ fn main() {
 
     let mut part1_grid = grid.clone();
     part1_grid.run();
-    println!("Part 1: {}", part1_grid.guard.n_visited());
+    let visited_positions: HashSet<_> = part1_grid
+        .guard
+        .visited
+        .iter()
+        .map(|((x, y), _)| (*x, *y))
+        .collect();
+    println!("Part 1: {}", visited_positions.len());
 
-    let valid_positions: Vec<_> = (0..grid.width)
+    let valid_positions: Vec<_> = visited_positions
         .into_par_iter()
-        .flat_map(|x| (0..grid.height).into_par_iter().map(move |y| (x, y)))
         .filter(|&pos| grid.get(pos) == '.' && pos != grid.guard.start_position)
         .filter_map(|obstacle| {
             let mut grid_clone = grid.clone();
