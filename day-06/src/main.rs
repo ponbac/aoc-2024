@@ -1,20 +1,7 @@
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::collections::HashSet;
+use std::{collections::HashSet, time::Instant};
 
 const INPUT: &str = include_str!("../input1.txt");
-
-const EXAMPLE_INPUT: &str = r#"
-....#.....
-.........#
-..........
-..#.......
-.......#..
-..........
-.#..^.....
-........#.
-#.........
-......#...
-"#;
 
 #[derive(Debug, Clone)]
 struct Guard {
@@ -149,6 +136,7 @@ impl Grid {
 }
 
 fn main() {
+    let start = Instant::now();
     let grid = Grid::parse(INPUT.trim());
 
     let mut part1_grid = grid.clone();
@@ -167,6 +155,7 @@ fn main() {
         })
         .collect();
     println!("Part 2: {}", valid_positions.len());
+    println!("Time: {:?}", start.elapsed());
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
