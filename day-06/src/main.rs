@@ -26,7 +26,6 @@ struct Guard {
 
 #[derive(Debug, PartialEq)]
 enum GuardState {
-    Ok,
     OutOfBounds,
     InLoop,
 }
@@ -44,9 +43,9 @@ impl Guard {
         }
     }
 
-    fn move_in_direction(&mut self, direction: Direction) {
-        self.position = self.position + direction;
-        self.visited.insert((self.position, direction));
+    fn move_in_curr_direction(&mut self) {
+        self.position = self.position + self.direction;
+        self.visited.insert((self.position, self.direction));
     }
 
     fn reset(&mut self) {
@@ -113,11 +112,9 @@ impl Grid {
     }
 
     fn run(&mut self) -> GuardState {
-        loop {
-            match self.move_guard() {
-                GuardState::Ok => continue,
-                state => return state,
-            }
+        match self.move_guard() {
+            GuardState::InLoop => GuardState::InLoop,
+            GuardState::OutOfBounds => GuardState::OutOfBounds,
         }
     }
 
@@ -131,35 +128,33 @@ impl Grid {
     }
 
     fn move_guard(&mut self) -> GuardState {
-        let new_position = self.guard.position + self.guard.direction;
-        if !self.is_in_bounds(new_position) {
-            return GuardState::OutOfBounds;
-        }
+        let mut next_pos = self.guard.position + self.guard.direction;
+        while self.is_in_bounds(next_pos) {
+            if self.get(next_pos) == '#' {
+                self.guard.direction = self.guard.direction.turn_right();
+                return self.move_guard();
+            }
 
-        if self.get(new_position) == '#' {
-            self.guard.direction = self.guard.direction.turn_right();
-            self.move_guard()
-        } else {
-            let state = (new_position, self.guard.direction);
+            let state = (next_pos, self.guard.direction);
             if self.guard.visited.contains(&state) {
                 return GuardState::InLoop;
             }
 
-            self.guard.move_in_direction(self.guard.direction);
-            GuardState::Ok
+            self.guard.move_in_curr_direction();
+            next_pos = self.guard.position + self.guard.direction;
         }
+
+        GuardState::OutOfBounds
     }
 }
 
 fn main() {
     let grid = Grid::parse(INPUT.trim());
 
-    // Part 1
     let mut part1_grid = grid.clone();
     part1_grid.run();
-    println!("{}", part1_grid.guard.n_visited());
+    println!("Part 1: {}", part1_grid.guard.n_visited());
 
-    // Part 2
     let valid_positions: Vec<_> = (0..grid.width)
         .into_par_iter()
         .flat_map(|x| (0..grid.height).into_par_iter().map(move |y| (x, y)))
@@ -171,8 +166,7 @@ fn main() {
             (grid_clone.run() == GuardState::InLoop).then_some(obstacle)
         })
         .collect();
-
-    println!("Found {} valid obstacle positions", valid_positions.len());
+    println!("Part 2: {}", valid_positions.len());
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
