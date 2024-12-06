@@ -1,5 +1,6 @@
+use fxhash::FxHashSet as HashSet;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::{collections::HashSet, time::Instant};
+use std::time::Instant;
 
 const INPUT: &str = include_str!("../input1.txt");
 
@@ -19,7 +20,7 @@ enum GuardState {
 
 impl Guard {
     fn new(start_position: (isize, isize)) -> Self {
-        let mut visited = HashSet::new();
+        let mut visited = HashSet::default();
         visited.insert((start_position, Direction::Up));
 
         Self {
