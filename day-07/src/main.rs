@@ -1,4 +1,4 @@
-use std::time::Instant;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 const INPUT: &str = include_str!("../input1.txt");
 
@@ -14,15 +14,18 @@ impl Line {
         }
 
         let next = self.numbers[pos];
-        let add = self.try_combinations(current + next, pos + 1, part2);
-        let multiply = self.try_combinations(current * next, pos + 1, part2);
-
-        if !part2 {
-            return add || multiply;
+        if self.try_combinations(current + next, pos + 1, part2) {
+            return true;
+        }
+        if self.try_combinations(current * next, pos + 1, part2) {
+            return true;
+        }
+        if part2 {
+            let concat = format!("{}{}", current, next).parse::<usize>().unwrap_or(0);
+            return self.try_combinations(concat, pos + 1, part2);
         }
 
-        let concat = format!("{}{}", current, next).parse::<usize>().unwrap_or(0);
-        add || multiply || self.try_combinations(concat, pos + 1, part2)
+        false
     }
 
     fn is_valid(&self, part2: bool) -> bool {
@@ -30,8 +33,15 @@ impl Line {
     }
 }
 
+fn solve(lines: &[Line], part2: bool) -> usize {
+    lines
+        .par_iter()
+        .filter(|line| line.is_valid(part2))
+        .map(|line| line.sum)
+        .sum()
+}
+
 fn main() {
-    let start = Instant::now();
     let lines: Vec<Line> = INPUT
         .lines()
         .map(|line| {
@@ -45,23 +55,6 @@ fn main() {
         })
         .collect();
 
-    println!(
-        "Part 1: {}",
-        lines
-            .iter()
-            .filter(|line| line.is_valid(false))
-            .map(|line| line.sum)
-            .sum::<usize>()
-    );
-
-    println!(
-        "Part 2: {}",
-        lines
-            .iter()
-            .filter(|line| line.is_valid(true))
-            .map(|line| line.sum)
-            .sum::<usize>()
-    );
-
-    println!("Time: {:?}", start.elapsed());
+    println!("Part 1: {}", solve(&lines, false));
+    println!("Part 2: {}", solve(&lines, true));
 }
