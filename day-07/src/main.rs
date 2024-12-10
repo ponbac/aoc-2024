@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 const INPUT: &str = include_str!("../input1.txt");
@@ -42,6 +44,7 @@ fn solve(lines: &[Line], part2: bool) -> usize {
 }
 
 fn main() {
+    let start = Instant::now();
     let lines: Vec<Line> = INPUT
         .lines()
         .map(|line| {
@@ -57,4 +60,5 @@ fn main() {
 
     println!("Part 1: {}", solve(&lines, false));
     println!("Part 2: {}", solve(&lines, true));
+    println!("Time: {:?}", start.elapsed());
 }
