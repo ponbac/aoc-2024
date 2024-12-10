@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 aoc = { path = "../aoc" }
 rayon = { workspace = true }
+fxhash = { workspace = true }

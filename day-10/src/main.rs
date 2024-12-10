@@ -1,4 +1,5 @@
 use aoc::Direction;
+use fxhash::FxHashSet as HashSet;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::time::Instant;
 
@@ -6,7 +7,7 @@ const INPUT: &str = include_str!("../input1.txt");
 
 #[derive(Debug)]
 struct Grid {
-    cells: Vec<Vec<i32>>,
+    cells: Vec<i32>,
     width: isize,
     height: isize,
     trailheads: Vec<(isize, isize)>,
@@ -14,7 +15,7 @@ struct Grid {
 
 impl Grid {
     fn new(input: &str) -> Self {
-        let cells: Vec<Vec<i32>> = input
+        let rows: Vec<Vec<i32>> = input
             .lines()
             .map(|line| {
                 line.chars()
@@ -23,17 +24,18 @@ impl Grid {
             })
             .collect();
 
-        let height = cells.len() as isize;
-        let width = cells.first().map_or(0, Vec::len) as isize;
+        let height = rows.len() as isize;
+        let width = rows.first().map_or(0, Vec::len) as isize;
+        let cells: Vec<i32> = rows.into_iter().flatten().collect();
 
         let trailheads = cells
             .iter()
             .enumerate()
-            .flat_map(|(y, row)| {
-                row.iter()
-                    .enumerate()
-                    .filter(|(_, &cell)| cell == 0)
-                    .map(move |(x, _)| (x as isize, y as isize))
+            .filter(|(_, &cell)| cell == 0)
+            .map(|(i, _)| {
+                let x = (i as isize) % width;
+                let y = (i as isize) / width;
+                (x, y)
             })
             .collect();
 
@@ -46,7 +48,7 @@ impl Grid {
     }
 
     fn get(&self, (x, y): (isize, isize)) -> i32 {
-        self.cells[y as usize][x as usize]
+        self.cells[(y * self.width + x) as usize]
     }
 
     fn in_bounds(&self, (x, y): (isize, isize)) -> bool {
@@ -54,34 +56,29 @@ impl Grid {
     }
 
     fn find_paths(&self, start: (isize, isize)) -> (usize, usize) {
-        let mut paths = Vec::new();
-        let mut paths_part2 = Vec::new();
         let mut current_path = vec![start];
-
-        self.find_paths_recursive(start, &mut current_path, &mut paths, &mut paths_part2);
-        (paths.len(), paths_part2.len())
+        let mut seen_endpoints = HashSet::default();
+        let mut counts = (0, 0);
+        self.find_paths_recursive(start, &mut current_path, &mut seen_endpoints, &mut counts);
+        counts
     }
 
     fn find_paths_recursive(
         &self,
         current: (isize, isize),
         current_path: &mut Vec<(isize, isize)>,
-        all_paths: &mut Vec<Vec<(isize, isize)>>,
-        all_paths_part2: &mut Vec<Vec<(isize, isize)>>,
+        seen_endpoints: &mut HashSet<(isize, isize)>,
+        counts: &mut (usize, usize),
     ) {
         if self.get(current) == 9 {
-            all_paths_part2.push(current_path.clone());
-            if !all_paths
-                .iter()
-                .any(|path| path.last() == current_path.last())
-            {
-                all_paths.push(current_path.clone());
+            counts.1 += 1; // Part 2
+            if seen_endpoints.insert(current) {
+                counts.0 += 1; // Part 1
             }
             return;
         }
 
         let current_value = self.get(current);
-
         for dir in Direction::ALL {
             let next_pos = current + dir;
             if !self.in_bounds(next_pos)
@@ -92,7 +89,7 @@ impl Grid {
             }
 
             current_path.push(next_pos);
-            self.find_paths_recursive(next_pos, current_path, all_paths, all_paths_part2);
+            self.find_paths_recursive(next_pos, current_path, seen_endpoints, counts);
             current_path.pop();
         }
     }
