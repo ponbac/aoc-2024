@@ -1,15 +1,13 @@
-use std::{num::ParseIntError, str::FromStr};
+use std::{fmt::Display, num::ParseIntError, str::FromStr};
 
 const INPUT: &str = include_str!("../input1.txt");
-const EXAMPLE: &str = r"125 17";
 
-#[derive(Debug)]
 struct Stone(u64);
 
 impl Stone {
     fn split(&self) -> Vec<Self> {
         match self.0 {
-            0 => vec![Self(0)],
+            0 => vec![Self(1)],
             n if n.to_string().len() % 2 == 0 => {
                 let s = n.to_string();
                 let (left, right) = s.split_at(s.len() / 2);
@@ -25,18 +23,13 @@ fn blink(stones: &[Stone]) -> Vec<Stone> {
 }
 
 fn main() {
-    let stones = EXAMPLE
+    let stones = INPUT
         .split_whitespace()
         .map(|s| s.parse::<Stone>().unwrap())
         .collect::<Vec<_>>();
 
-    println!("{:?}", stones);
-    let mut current_stones = stones;
-    for _ in 0..25 {
-        current_stones = blink(&current_stones);
-    }
-
-    println!("Part 1: {}", current_stones.len());
+    let final_stones = (0..75).fold(stones, |stones, _| blink(&stones));
+    println!("Part 1: {}", final_stones.len());
 }
 
 impl FromStr for Stone {
@@ -44,5 +37,11 @@ impl FromStr for Stone {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.parse().unwrap()))
+    }
+}
+
+impl Display for Stone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
