@@ -1,34 +1,33 @@
-use std::collections::HashMap;
-use std::{fmt::Display, num::ParseIntError, str::FromStr, time::Instant};
+use fxhash::FxHashMap as HashMap;
+use std::{num::ParseIntError, str::FromStr, time::Instant};
 
 const INPUT: &str = include_str!("../input1.txt");
 
-const EXAMPLE: &str = "125 17";
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+struct Stone(u64);
 
-fn blink(stones: &HashMap<u64, u64>) -> HashMap<u64, u64> {
-    let mut new_stones = HashMap::new();
-    for (&value, &count) in stones.iter() {
-        match value {
-            0 => {
-                *new_stones.entry(1).or_insert(0) += count;
-            }
+impl Stone {
+    fn split(&self) -> Vec<Stone> {
+        match self.0 {
+            0 => vec![Stone(1)],
             n if n.to_string().len() % 2 == 0 => {
                 let s = n.to_string();
                 let (left, right) = s.split_at(s.len() / 2);
-                let left_val = left.parse::<u64>().unwrap();
-                let right_val = right.parse::<u64>().unwrap();
-                new_stones
-                    .entry(left_val)
-                    .and_modify(|c| *c += count)
-                    .or_insert(count);
-                new_stones
-                    .entry(right_val)
-                    .and_modify(|c| *c += count)
-                    .or_insert(count);
+                vec![Stone(left.parse().unwrap()), Stone(right.parse().unwrap())]
             }
-            _ => {
-                *new_stones.entry(value * 2024).or_insert(0) += count;
-            }
+            _ => vec![Stone(self.0 * 2024)],
+        }
+    }
+}
+
+fn blink(stones: &HashMap<Stone, u64>) -> HashMap<Stone, u64> {
+    let mut new_stones = HashMap::default();
+    for (&stone, &count) in stones.iter() {
+        for new_stone in stone.split() {
+            new_stones
+                .entry(new_stone)
+                .and_modify(|c| *c += count)
+                .or_insert(count);
         }
     }
     new_stones
@@ -39,30 +38,26 @@ fn main() {
 
     let stones_input = INPUT
         .split_whitespace()
-        .map(|s| s.parse::<u64>().unwrap())
+        .map(|s| s.parse::<Stone>().unwrap())
         .collect::<Vec<_>>();
 
-    let mut stones_map: HashMap<u64, u64> = HashMap::new();
+    let mut stones_map: HashMap<Stone, u64> = HashMap::default();
     for stone in stones_input {
         *stones_map.entry(stone).or_insert(0) += 1;
     }
 
-    let final_stones = (0..75).fold(stones_map, |stones, _| blink(&stones));
-    println!("Part 1: {}", final_stones.values().sum::<u64>());
+    let part1_stones = (0..25).fold(stones_map.clone(), |stones_acc, _| blink(&stones_acc));
+    let part2_stones = (0..75).fold(stones_map, |stones_acc, _| blink(&stones_acc));
+    println!("Part 1: {}", part1_stones.values().sum::<u64>());
+    println!("Part 2: {}", part2_stones.values().sum::<u64>());
 
     println!("Time: {:?}", start.elapsed());
 }
 
-// impl FromStr for Stone {
-//     type Err = ParseIntError;
+impl FromStr for Stone {
+    type Err = ParseIntError;
 
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         Ok(Self(s.parse().unwrap()))
-//     }
-// }
-
-// impl Display for Stone {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", self.0)
-//     }
-// }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.parse()?))
+    }
+}
