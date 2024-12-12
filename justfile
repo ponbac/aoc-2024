@@ -3,8 +3,9 @@ work day:
     cargo watch -q -x "run -p day-{{day}}"
 work-release day:
     cargo watch -q -x "run -p day-{{day}} --release"
+# cargo install cargo-nextest --locked
 test day:
-    cargo watch -q -x "test -p day-{{day}}"
+    cargo watch -q -x "nextest run -p day-{{day}}"
 new day:
     cargo new day-{{day}}
     just input {{day}}
