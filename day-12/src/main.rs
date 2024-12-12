@@ -32,40 +32,8 @@ impl Region {
         area * perimeter
     }
 
-    fn cost_2(&self, width: isize, height: isize) -> isize {
-        let mut sides = HashSet::default();
-        for &(x, y) in &self.cells {
-            let adjacent = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)];
-
-            for (adj_x, adj_y) in adjacent {
-                if adj_x < 0 || adj_y < 0 || adj_x >= width || adj_y >= height {
-                    continue;
-                }
-
-                if !self.cells.contains(&(adj_x, adj_y)) {
-                    let edge = if x == adj_x {
-                        // Vertical edge
-                        if y < adj_y {
-                            ((x, y), (x, y + 1))
-                        } else {
-                            ((x, adj_y), (x, y))
-                        }
-                    } else {
-                        // Horizontal edge
-                        if x < adj_x {
-                            ((x, y), (x + 1, y))
-                        } else {
-                            ((adj_x, y), (x, y))
-                        }
-                    };
-                    sides.insert(edge);
-                }
-            }
-        }
-
-        println!("sides: {:?}", sides);
-        let area = self.cells.len() as isize;
-        area * sides.len() as isize
+    fn cost_2(&self) -> isize {
+        todo!()
     }
 }
 
@@ -158,10 +126,7 @@ fn process_2(input: &str) -> isize {
     let garden = Garden::new(input);
     let regions = garden.regions();
 
-    regions
-        .iter()
-        .map(|r| r.cost_2(garden.width, garden.height))
-        .sum()
+    regions.iter().map(|r| r.cost_2()).sum()
 }
 
 fn main() {
