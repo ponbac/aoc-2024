@@ -139,6 +139,11 @@ dependencies = [
 [[package]]
 name = "day-12"
 version = "0.1.0"
+dependencies = [
+ "aoc",
+ "fxhash",
+ "rayon",
+]
 
 [[package]]
 name = "either"
