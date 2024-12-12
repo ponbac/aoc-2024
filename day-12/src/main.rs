@@ -60,13 +60,9 @@ struct Garden {
 
 impl Garden {
     fn new(input: &str) -> Self {
-        let grid = input
-            .trim()
-            .lines()
-            .map(|l| l.chars().collect::<Vec<_>>())
-            .collect::<Vec<_>>();
-        let width = grid[0].len() as isize;
+        let grid: Vec<Vec<char>> = input.lines().map(|l| l.chars().collect()).collect();
         let height = grid.len() as isize;
+        let width = grid.first().map_or(0, |row| row.len()) as isize;
 
         Self {
             grid,
@@ -75,11 +71,16 @@ impl Garden {
         }
     }
 
-    fn get(&self, x: isize, y: isize) -> char {
-        self.grid[y as usize][x as usize]
+    fn get(&self, pos: (isize, isize)) -> Option<char> {
+        let (x, y) = pos;
+        if self.in_bounds(pos) {
+            Some(self.grid[y as usize][x as usize])
+        } else {
+            None
+        }
     }
 
-    fn in_bounds(&self, x: isize, y: isize) -> bool {
+    fn in_bounds(&self, (x, y): (isize, isize)) -> bool {
         x >= 0 && y >= 0 && x < self.width && y < self.height
     }
 
@@ -89,44 +90,41 @@ impl Garden {
 
         for y in 0..self.height {
             for x in 0..self.width {
-                if explored.contains(&(x, y)) {
+                let pos = (x, y);
+                if explored.contains(&pos) {
                     continue;
                 }
 
-                let region = self.find_region(x, y, &mut explored);
-                regions.push(region);
+                if let Some(region) = self.find_region(pos, &mut explored) {
+                    regions.push(region);
+                }
             }
         }
 
         regions
     }
 
-    fn find_region(&self, x: isize, y: isize, explored: &mut HashSet<(isize, isize)>) -> Region {
+    fn find_region(
+        &self,
+        start: (isize, isize),
+        explored: &mut HashSet<(isize, isize)>,
+    ) -> Option<Region> {
         let mut cells = Vec::new();
-        let mut queue = VecDeque::new();
-        queue.push_back((x, y));
+        let start_char = self.get(start)?;
 
-        let id = self.get(x, y);
-        while let Some((x, y)) = queue.pop_front() {
-            if !self.in_bounds(x, y) {
+        let mut queue = VecDeque::from([start]);
+        while let Some(pos) = queue.pop_front() {
+            if explored.contains(&pos) || self.get(pos) != Some(start_char) {
                 continue;
             }
 
-            let cell = self.get(x, y);
-            if cell != id || explored.contains(&(x, y)) {
-                continue;
-            }
+            explored.insert(pos);
+            cells.push(pos);
 
-            explored.insert((x, y));
-            cells.push((x, y));
-
-            for dir in Direction::ALL_BASIC {
-                let (dx, dy) = dir.as_step();
-                queue.push_back((x + dx, y + dy));
-            }
+            queue.extend(Direction::ALL_BASIC.iter().map(|&dir| pos + dir));
         }
 
-        Region { cells }
+        Some(Region { cells })
     }
 }
 
