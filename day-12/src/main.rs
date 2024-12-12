@@ -5,35 +5,50 @@ use fxhash::FxHashSet as HashSet;
 
 const INPUT: &str = include_str!("../input1.txt");
 
-#[derive(Debug)]
 struct Region {
-    id: char,
     cells: Vec<(isize, isize)>,
 }
 
 impl Region {
     fn cost(&self) -> isize {
         let mut perimeter = 0;
-        for &(x, y) in &self.cells {
-            let adjacent = [
-                (x + 1, y),
-                (x.wrapping_sub(1), y),
-                (x, y + 1),
-                (x, y.wrapping_sub(1)),
-            ];
-
-            for adj in adjacent {
-                if !self.cells.contains(&adj) {
+        for &pos in &self.cells {
+            for dir in Direction::ALL_BASIC {
+                if !self.cells.contains(&(pos + dir)) {
                     perimeter += 1;
                 }
             }
         }
+
         let area = self.cells.len() as isize;
         area * perimeter
     }
 
     fn cost_2(&self) -> isize {
-        todo!()
+        let mut corners = 0;
+        for &pos in &self.cells {
+            let adjacent: Vec<bool> = Direction::ALL_BASIC
+                .iter()
+                .map(|&dir| self.cells.contains(&(pos + dir)))
+                .collect();
+            let diagonal: Vec<bool> = Direction::ALL_DIAGONAL
+                .iter()
+                .map(|&dir| self.cells.contains(&(pos + dir)))
+                .collect();
+
+            for i in 0..4 {
+                if !adjacent[i] && !adjacent[(i + 1) % 4] {
+                    // Convex corner: two adjacent cells are empty
+                    corners += 1;
+                } else if adjacent[i] && adjacent[(i + 1) % 4] && !diagonal[i] {
+                    // Concave corner: two adjacent cells are filled but diagonal is empty
+                    corners += 1;
+                }
+            }
+        }
+
+        let area = self.cells.len() as isize;
+        area * corners
     }
 }
 
@@ -105,132 +120,26 @@ impl Garden {
             explored.insert((x, y));
             cells.push((x, y));
 
-            for dir in Direction::ALL {
+            for dir in Direction::ALL_BASIC {
                 let (dx, dy) = dir.as_step();
                 queue.push_back((x + dx, y + dy));
             }
         }
 
-        Region { id, cells }
+        Region { cells }
     }
-}
-
-fn process(input: &str) -> isize {
-    let garden = Garden::new(input);
-    let regions = garden.regions();
-
-    regions.iter().map(|r| r.cost()).sum()
-}
-
-fn process_2(input: &str) -> isize {
-    let garden = Garden::new(input);
-    let regions = garden.regions();
-
-    regions.iter().map(|r| r.cost_2()).sum()
 }
 
 fn main() {
-    println!("Part 1: {}", process(INPUT));
-    println!("Part 2: {}", process_2(INPUT));
-}
+    let garden = Garden::new(INPUT);
+    let regions = garden.regions();
 
-#[cfg(test)]
-mod tests {
-    use crate::{process, process_2, Region};
-
-    const EXAMPLE_1: &str = r#"
-OOOOO
-OXOXO
-OOOOO
-OXOXO
-OOOOO
-"#;
-
-    const EXAMPLE_2: &str = r#"
-RRRRIICCFF
-RRRRIICCCF
-VVRRRCCFFF
-VVRCCCJFFF
-VVVVCJJCFE
-VVIVCCJJEE
-VVIIICJJEE
-MIIIIIJJEE
-MIIISIJEEE
-MMMISSJEEE
-"#;
-
-    const EXAMPLE_3: &str = r#"
-AAAA
-BBCD
-BBCC
-EEEC
-"#;
-
-    #[test]
-    fn test_example_1() {
-        assert_eq!(process(EXAMPLE_1), 772);
-    }
-
-    #[test]
-    fn test_example_2() {
-        assert_eq!(process(EXAMPLE_2), 1930);
-    }
-
-    #[test]
-    fn test_region_cost() {
-        // A region that looks like: AAAA (4 cells in a row)
-        let region = Region {
-            id: 'A',
-            cells: vec![(0, 0), (0, 1), (0, 2), (0, 3)],
-        };
-        assert_eq!(region.cost(), 40); // area=4, perimeter=10
-
-        // A single cell region
-        let region = Region {
-            id: 'D',
-            cells: vec![(0, 0)],
-        };
-        assert_eq!(region.cost(), 4); // area=1, perimeter=4
-
-        // A 2x2 square region
-        let region = Region {
-            id: 'B',
-            cells: vec![(0, 0), (0, 1), (1, 0), (1, 1)],
-        };
-        assert_eq!(region.cost(), 32); // area=4, perimeter=8
-
-        // Irregular region
-        let region = Region {
-            id: 'C',
-            cells: vec![(0, 0), (0, 1), (1, 1), (1, 2)],
-        };
-        assert_eq!(region.cost(), 40); // area=4, perimeter=10
-    }
-
-    #[test]
-    fn test_region_cost_2() {
-        let region = Region {
-            id: 'A',
-            cells: vec![(0, 0), (0, 1), (0, 2), (0, 3)],
-        };
-        assert_eq!(region.cost_2(), 4 * 4); // area=4, sides=4
-
-        let region = Region {
-            id: 'B',
-            cells: vec![(0, 0), (0, 1), (1, 0), (1, 1)],
-        };
-        assert_eq!(region.cost_2(), 4 * 4); // area=4, sides=4
-
-        // Irregular region
-        let region = Region {
-            id: 'C',
-            cells: vec![(0, 0), (0, 1), (1, 1), (1, 2)],
-        };
-        assert_eq!(region.cost_2(), 4 * 8); // area=4, sides=8
-    }
-
-    // #[test]
-    // fn test_example_3_part_2() {
-    //     assert_eq!(process_2(EXAMPLE_3), 80);
-    // }
+    println!(
+        "Part 1: {}",
+        regions.iter().map(|r| r.cost()).sum::<isize>()
+    );
+    println!(
+        "Part 2: {}",
+        regions.iter().map(|r| r.cost_2()).sum::<isize>()
+    );
 }

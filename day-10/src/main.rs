@@ -79,7 +79,7 @@ impl Grid {
         }
 
         let current_value = self.get(current);
-        for dir in Direction::ALL {
+        for dir in Direction::ALL_BASIC {
             let next_pos = current + dir;
             if !self.in_bounds(next_pos)
                 || self.get(next_pos) != current_value + 1
