@@ -91,10 +91,16 @@ impl Machine {
         None
     }
 
+    // Cramer's rule 2x2
     fn solve_part_2(&self) -> Option<(u64, u64)> {
         let (x1, y1) = (self.buttons[0].x() as f64, self.buttons[0].y() as f64);
         let (x2, y2) = (self.buttons[1].x() as f64, self.buttons[1].y() as f64);
-        let (target_x, target_y) = (self.prize.0 as f64, self.prize.1 as f64);
+
+        let n_to_add = 10_000_000_000_000.0;
+        let (target_x, target_y) = (
+            self.prize.0 as f64 + n_to_add,
+            self.prize.1 as f64 + n_to_add,
+        );
 
         let determinant = x1 * y2 - x2 * y1;
         if determinant == 0.0 {
@@ -106,12 +112,6 @@ impl Machine {
 
         const EPSILON: f64 = 1e-10;
         if a < 0.0 || b < 0.0 || a.fract().abs() > EPSILON || b.fract().abs() > EPSILON {
-            return None;
-        }
-
-        let solution_x = a * x1 + b * x2;
-        let solution_y = a * y1 + b * y2;
-        if (solution_x - target_x).abs() > EPSILON || (solution_y - target_y).abs() > EPSILON {
             return None;
         }
 
