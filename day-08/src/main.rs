@@ -20,8 +20,26 @@ struct Point {
     y: i32,
 }
 
-fn parse_input(input: &str) -> HashMap<char, Vec<Point>> {
+impl Point {
+    fn add(&self, other: &Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+
+    fn sub(&self, other: &Point) -> Point {
+        Point {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+
+fn parse_input(input: &str) -> (HashMap<char, Vec<Point>>, i32, i32) {
     let mut antennas: HashMap<char, Vec<Point>> = HashMap::new();
+    let height = input.lines().count() as i32;
+    let width = input.lines().next().unwrap().len() as i32;
 
     for (y, line) in input.lines().enumerate() {
         for (x, c) in line.chars().enumerate() {
@@ -34,67 +52,37 @@ fn parse_input(input: &str) -> HashMap<char, Vec<Point>> {
         }
     }
 
-    antennas
+    (antennas, width, height)
 }
 
-fn calculate_antinodes(antennas: &HashMap<char, Vec<Point>>) -> HashSet<Point> {
+fn calculate_antinodes(
+    antennas: &HashMap<char, Vec<Point>>,
+    width: i32,
+    height: i32,
+) -> HashSet<Point> {
     let mut antinodes = HashSet::new();
-    let bounds = Point { x: 12, y: 12 }; // Based on example input size
 
-    for (_, positions) in antennas {
-        // For each pair of antennas with the same frequency
+    // For each frequency
+    for positions in antennas.values() {
+        // Compare each pair of antennas with the same frequency
         for i in 0..positions.len() {
-            for j in (i + 1)..positions.len() {
-                let a1 = positions[i];
-                let a2 = positions[j];
+            for j in i + 1..positions.len() {
+                let p1 = positions[i];
+                let p2 = positions[j];
 
-                // Vector from a1 to a2
-                let dx = a2.x - a1.x;
-                let dy = a2.y - a1.y;
+                // Calculate the vector between the two points
+                let diff = p2.sub(&p1);
 
-                // First antinode: distance to a1 is half the distance to a2
-                // This means it's 1/3 of the way from a1 to a2
-                let antinode1 = Point {
-                    x: a1.x + dx / 3,
-                    y: a1.y + dy / 3,
-                };
-
-                // Second antinode: distance to a2 is half the distance to a1
-                // This means it's 1/3 of the way from a2 back towards a1
-                let antinode2 = Point {
-                    x: a2.x - dx / 3,
-                    y: a2.y - dy / 3,
-                };
-
-                // Only add antinodes that are within bounds
-                if antinode1.x >= 0
-                    && antinode1.x < bounds.x
-                    && antinode1.y >= 0
-                    && antinode1.y < bounds.y
-                {
+                // First antinode: extend from p2 in the direction of the vector
+                let antinode1 = p2.add(&diff);
+                if is_within_bounds(&antinode1, width, height) {
                     antinodes.insert(antinode1);
                 }
-                if antinode2.x >= 0
-                    && antinode2.x < bounds.x
-                    && antinode2.y >= 0
-                    && antinode2.y < bounds.y
-                {
-                    antinodes.insert(antinode2);
-                }
-            }
-        }
-    }
 
-    // Add antinodes that occur at antenna positions
-    for (freq1, positions1) in antennas.iter() {
-        for (freq2, positions2) in antennas.iter() {
-            if freq1 != freq2 {
-                // Different frequencies
-                for pos1 in positions1 {
-                    // Check if any antenna position is also an antinode
-                    if antinodes.contains(pos1) {
-                        antinodes.insert(*pos1);
-                    }
+                // Second antinode: extend from p1 in the opposite direction
+                let antinode2 = p1.sub(&diff);
+                if is_within_bounds(&antinode2, width, height) {
+                    antinodes.insert(antinode2);
                 }
             }
         }
@@ -103,19 +91,107 @@ fn calculate_antinodes(antennas: &HashMap<char, Vec<Point>>) -> HashSet<Point> {
     antinodes
 }
 
+fn is_within_bounds(p: &Point, width: i32, height: i32) -> bool {
+    p.x >= 0 && p.x < width && p.y >= 0 && p.y < height
+}
+
+fn calculate_antinodes_part2(
+    antennas: &HashMap<char, Vec<Point>>,
+    width: i32,
+    height: i32,
+) -> HashSet<Point> {
+    let mut antinodes = HashSet::new();
+
+    // For each frequency
+    for positions in antennas.values() {
+        // Skip if there's only one antenna of this frequency
+        if positions.len() < 2 {
+            continue;
+        }
+
+        // Compare each pair of antennas with the same frequency
+        for i in 0..positions.len() {
+            for j in i + 1..positions.len() {
+                let p1 = positions[i];
+                let p2 = positions[j];
+
+                // Add both antenna positions as antinodes
+                if is_within_bounds(&p1, width, height) {
+                    antinodes.insert(p1);
+                }
+                if is_within_bounds(&p2, width, height) {
+                    antinodes.insert(p2);
+                }
+
+                // Calculate the vector between the two points
+                let dx = p2.x - p1.x;
+                let dy = p2.y - p1.y;
+
+                // Check all points on the line between and beyond the antennas
+                // First, normalize the vector to get the smallest step
+                let gcd = gcd(dx.abs(), dy.abs());
+                let step_x = dx / gcd;
+                let step_y = dy / gcd;
+
+                // Check points in both directions
+                let mut current = Point {
+                    x: p1.x - step_x,
+                    y: p1.y - step_y,
+                };
+                // Check points before p1
+                while is_within_bounds(&current, width, height) {
+                    antinodes.insert(current);
+                    current.x -= step_x;
+                    current.y -= step_y;
+                }
+
+                let mut current = Point {
+                    x: p2.x + step_x,
+                    y: p2.y + step_y,
+                };
+                // Check points after p2
+                while is_within_bounds(&current, width, height) {
+                    antinodes.insert(current);
+                    current.x += step_x;
+                    current.y += step_y;
+                }
+
+                // Check points between p1 and p2
+                let mut current = Point {
+                    x: p1.x + step_x,
+                    y: p1.y + step_y,
+                };
+                while current.x != p2.x || current.y != p2.y {
+                    if is_within_bounds(&current, width, height) {
+                        antinodes.insert(current);
+                    }
+                    current.x += step_x;
+                    current.y += step_y;
+                }
+            }
+        }
+    }
+
+    antinodes
+}
+
+fn gcd(mut a: i32, mut b: i32) -> i32 {
+    while b != 0 {
+        let temp = b;
+        b = a % b;
+        a = temp;
+    }
+    a
+}
+
 fn main() {
-    let antennas = parse_input(EXAMPLE);
-    let antinodes = calculate_antinodes(&antennas);
+    let (antennas, width, height) = parse_input(INPUT);
 
-    // Debug print
-    println!("Antennas:");
-    for (freq, positions) in &antennas {
-        println!("{}: {:?}", freq, positions);
-    }
-    println!("\nAntinodes:");
-    for antinode in &antinodes {
-        println!("{:?}", antinode);
-    }
+    // Part 1
+    let antinodes = calculate_antinodes(&antennas, width, height);
+    println!("Part 1 - Number of unique antinodes: {}", antinodes.len());
 
-    println!("\nNumber of unique antinodes: {}", antinodes.len());
+    // Part 2
+    let antinodes2 = calculate_antinodes_part2(&antennas, width, height);
+    println!("Part 2 - Number of unique antinodes: {}", antinodes2.len());
 }

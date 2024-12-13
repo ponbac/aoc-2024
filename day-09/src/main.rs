@@ -1,5 +1,4 @@
 const INPUT: &str = include_str!("../input1.txt");
-const EXAMPLE: &str = "2333133121414131402";
 
 #[derive(Debug, Clone)]
 struct FileBlock {
@@ -173,7 +172,7 @@ impl Disk {
 }
 
 fn main() {
-    let input = EXAMPLE
+    let input = INPUT
         .trim()
         .chars()
         .map(|c| c.to_digit(10).unwrap() as usize)
