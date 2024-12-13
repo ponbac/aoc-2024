@@ -1,21 +1,4 @@
 const INPUT: &str = include_str!("../input1.txt");
-const EXAMPLE: &str = r#"
-Button A: X+94, Y+34
-Button B: X+22, Y+67
-Prize: X=8400, Y=5400
-
-Button A: X+26, Y+66
-Button B: X+67, Y+21
-Prize: X=12748, Y=12176
-
-Button A: X+17, Y+86
-Button B: X+84, Y+37
-Prize: X=7870, Y=6450
-
-Button A: X+69, Y+23
-Button B: X+27, Y+71
-Prize: X=18641, Y=10279
-"#;
 
 #[derive(Debug)]
 struct Button {
@@ -44,7 +27,7 @@ impl Button {
 #[derive(Debug)]
 struct Machine {
     buttons: Vec<Button>,
-    prize: (u64, u64),
+    prize_pos: (u64, u64),
 }
 
 impl Machine {
@@ -73,7 +56,7 @@ impl Machine {
 
         Machine {
             buttons: buttons.into_iter().rev().collect(),
-            prize: (x.parse().unwrap(), y.parse().unwrap()),
+            prize_pos: (x.parse().unwrap(), y.parse().unwrap()),
         }
     }
 
@@ -83,7 +66,7 @@ impl Machine {
                 let x = a * self.buttons[0].x() + b * self.buttons[1].x();
                 let y = a * self.buttons[0].y() + b * self.buttons[1].y();
 
-                if x == self.prize.0 && y == self.prize.1 {
+                if x == self.prize_pos.0 && y == self.prize_pos.1 {
                     return Some((a, b));
                 }
             }
@@ -98,8 +81,8 @@ impl Machine {
 
         let n_to_add = 10_000_000_000_000.0;
         let (target_x, target_y) = (
-            self.prize.0 as f64 + n_to_add,
-            self.prize.1 as f64 + n_to_add,
+            self.prize_pos.0 as f64 + n_to_add,
+            self.prize_pos.1 as f64 + n_to_add,
         );
 
         let determinant = x1 * y2 - x2 * y1;
@@ -130,32 +113,27 @@ fn main() {
         .map(Machine::new)
         .collect::<Vec<_>>();
 
-    let mut total_cost = 0;
-    let mut winnable = 0;
-    for machine in &machines {
-        if let Some(presses) = machine.solve() {
-            winnable += 1;
-            let cost = machine.calculate_cost(presses);
-            total_cost += cost;
-        }
-    }
+    let (winnable, total_cost) = solve(&machines, false);
+    println!("Part 1: {} winnable with {} tokens", winnable, total_cost);
+    let (winnable_2, total_cost_2) = solve(&machines, true);
+    println!(
+        "Part 2: {} winnable with {} tokens",
+        winnable_2, total_cost_2
+    );
+}
 
-    println!("Part 1:");
-    println!("Total prizes possible: {}", winnable);
-    println!("Total tokens needed: {}", total_cost);
+/// Returns `(winnable_count, total_cost)`
+fn solve(machines: &[Machine], part2: bool) -> (u64, u64) {
+    machines
+        .iter()
+        .filter_map(|machine| {
+            let solver = if part2 {
+                Machine::solve_part_2
+            } else {
+                Machine::solve
+            };
 
-    let mut total_cost_2 = 0;
-    let mut winnable_2 = 0;
-    for machine in &machines {
-        if let Some(presses) = machine.solve_part_2() {
-            println!("Possible to win machine {:?}", machine);
-            winnable_2 += 1;
-            let cost = machine.calculate_cost(presses);
-            total_cost_2 += cost;
-        }
-    }
-
-    println!("\nPart 2:");
-    println!("Total prizes possible: {}", winnable_2);
-    println!("Total tokens needed: {}", total_cost_2);
+            solver(machine).map(|presses| machine.calculate_cost(presses))
+        })
+        .fold((0, 0), |acc, cost| (acc.0 + 1, acc.1 + cost))
 }
