@@ -3,18 +3,11 @@ const INPUT: &str = include_str!("../input1.txt");
 #[derive(Debug)]
 struct Button {
     id: char,
-    delta: (u64, u64),
+    dx: u64,
+    dy: u64,
 }
 
 impl Button {
-    fn x(&self) -> u64 {
-        self.delta.0
-    }
-
-    fn y(&self) -> u64 {
-        self.delta.1
-    }
-
     fn cost(&self) -> u64 {
         match self.id {
             'A' => 3,
@@ -27,7 +20,7 @@ impl Button {
 #[derive(Debug)]
 struct Machine {
     buttons: Vec<Button>,
-    prize_pos: (u64, u64),
+    price_pos: (u64, u64),
 }
 
 impl Machine {
@@ -41,7 +34,8 @@ impl Machine {
                 let (x, y) = line.split_once("X+").unwrap().1.split_once(", Y+").unwrap();
                 Button {
                     id,
-                    delta: (x.parse().unwrap(), y.parse().unwrap()),
+                    dx: x.parse().unwrap(),
+                    dy: y.parse().unwrap(),
                 }
             })
             .collect();
@@ -56,17 +50,17 @@ impl Machine {
 
         Machine {
             buttons: buttons.into_iter().rev().collect(),
-            prize_pos: (x.parse().unwrap(), y.parse().unwrap()),
+            price_pos: (x.parse().unwrap(), y.parse().unwrap()),
         }
     }
 
     fn solve(&self) -> Option<(u64, u64)> {
         for a in 0..=100 {
             for b in 0..=100 {
-                let x = a * self.buttons[0].x() + b * self.buttons[1].x();
-                let y = a * self.buttons[0].y() + b * self.buttons[1].y();
+                let x = a * self.buttons[0].dx + b * self.buttons[1].dx;
+                let y = a * self.buttons[0].dy + b * self.buttons[1].dy;
 
-                if x == self.prize_pos.0 && y == self.prize_pos.1 {
+                if x == self.price_pos.0 && y == self.price_pos.1 {
                     return Some((a, b));
                 }
             }
@@ -76,13 +70,13 @@ impl Machine {
 
     // Cramer's rule 2x2
     fn solve_part_2(&self) -> Option<(u64, u64)> {
-        let (x1, y1) = (self.buttons[0].x() as f64, self.buttons[0].y() as f64);
-        let (x2, y2) = (self.buttons[1].x() as f64, self.buttons[1].y() as f64);
+        let (x1, y1) = (self.buttons[0].dx as f64, self.buttons[0].dy as f64);
+        let (x2, y2) = (self.buttons[1].dx as f64, self.buttons[1].dy as f64);
 
         let n_to_add = 10_000_000_000_000.0;
         let (target_x, target_y) = (
-            self.prize_pos.0 as f64 + n_to_add,
-            self.prize_pos.1 as f64 + n_to_add,
+            self.price_pos.0 as f64 + n_to_add,
+            self.price_pos.1 as f64 + n_to_add,
         );
 
         let determinant = x1 * y2 - x2 * y1;
