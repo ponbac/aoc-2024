@@ -92,19 +92,30 @@ impl Machine {
     }
 
     fn solve_part_2(&self) -> Option<(u64, u64)> {
-        let prize = (self.prize.0 * 10000000000000, self.prize.1 * 10000000000000);
+        let (x1, y1) = (self.buttons[0].x() as f64, self.buttons[0].y() as f64);
+        let (x2, y2) = (self.buttons[1].x() as f64, self.buttons[1].y() as f64);
+        let (target_x, target_y) = (self.prize.0 as f64, self.prize.1 as f64);
 
-        for a in 0..=100 {
-            for b in 0..=100 {
-                let x = a * self.buttons[0].x() + b * self.buttons[1].x();
-                let y = a * self.buttons[0].y() + b * self.buttons[1].y();
-
-                if x == prize.0 && y == prize.1 {
-                    return Some((a, b));
-                }
-            }
+        let determinant = x1 * y2 - x2 * y1;
+        if determinant == 0.0 {
+            return None;
         }
-        None
+
+        let a = (target_x * y2 - x2 * target_y) / determinant;
+        let b = (x1 * target_y - target_x * y1) / determinant;
+
+        const EPSILON: f64 = 1e-10;
+        if a < 0.0 || b < 0.0 || a.fract().abs() > EPSILON || b.fract().abs() > EPSILON {
+            return None;
+        }
+
+        let solution_x = a * x1 + b * x2;
+        let solution_y = a * y1 + b * y2;
+        if (solution_x - target_x).abs() > EPSILON || (solution_y - target_y).abs() > EPSILON {
+            return None;
+        }
+
+        Some((a as u64, b as u64))
     }
 
     fn calculate_cost(&self, presses: (u64, u64)) -> u64 {
@@ -121,7 +132,7 @@ fn main() {
 
     let mut total_cost = 0;
     let mut winnable = 0;
-    for machine in machines {
+    for machine in &machines {
         if let Some(presses) = machine.solve() {
             winnable += 1;
             let cost = machine.calculate_cost(presses);
@@ -129,6 +140,22 @@ fn main() {
         }
     }
 
+    println!("Part 1:");
     println!("Total prizes possible: {}", winnable);
     println!("Total tokens needed: {}", total_cost);
+
+    let mut total_cost_2 = 0;
+    let mut winnable_2 = 0;
+    for machine in &machines {
+        if let Some(presses) = machine.solve_part_2() {
+            println!("Possible to win machine {:?}", machine);
+            winnable_2 += 1;
+            let cost = machine.calculate_cost(presses);
+            total_cost_2 += cost;
+        }
+    }
+
+    println!("\nPart 2:");
+    println!("Total prizes possible: {}", winnable_2);
+    println!("Total tokens needed: {}", total_cost_2);
 }
