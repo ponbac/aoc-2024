@@ -1,25 +1,21 @@
 use std::collections::{HashMap, HashSet};
 
+use aoc::Point;
+
 const INPUT: &str = include_str!("../input1.txt");
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct Point {
-    x: i32,
-    y: i32,
-}
-
-fn parse_input(input: &str) -> (HashMap<char, Vec<Point>>, i32, i32) {
+fn parse_input(input: &str) -> (HashMap<char, Vec<Point>>, isize, isize) {
     let mut antennas: HashMap<char, Vec<Point>> = HashMap::new();
-    let height = input.lines().count() as i32;
-    let width = input.lines().next().unwrap().len() as i32;
+    let height = input.lines().count() as isize;
+    let width = input.lines().next().unwrap().len() as isize;
 
     for (y, line) in input.lines().enumerate() {
         for (x, c) in line.chars().enumerate() {
             if c != '.' {
-                antennas.entry(c).or_default().push(Point {
-                    x: x as i32,
-                    y: y as i32,
-                });
+                antennas.entry(c).or_default().push(Point::new(
+                    x as isize,
+                    y as isize,
+                ));
             }
         }
     }
@@ -29,8 +25,8 @@ fn parse_input(input: &str) -> (HashMap<char, Vec<Point>>, i32, i32) {
 
 fn calculate_antinodes(
     antennas: &HashMap<char, Vec<Point>>,
-    width: i32,
-    height: i32,
+    width: isize,
+    height: isize,
 ) -> HashSet<Point> {
     let mut antinodes = HashSet::new();
 
@@ -41,31 +37,16 @@ fn calculate_antinodes(
                 let p2 = positions[j];
 
                 // Calculate vector between points
-                let dx = p2.x - p1.x;
-                let dy = p2.y - p1.y;
+                let diff = p2 - p1;
 
                 // Add points where one antenna is twice as far as the other
-                let antinode1 = Point {
-                    x: p2.x + dx,
-                    y: p2.y + dy,
-                };
-                let antinode2 = Point {
-                    x: p1.x - dx,
-                    y: p1.y - dy,
-                };
+                let antinode1 = p2 + (diff.x, diff.y);
+                let antinode2 = p1 - (diff.x, diff.y);
 
-                if antinode1.x >= 0
-                    && antinode1.x < width
-                    && antinode1.y >= 0
-                    && antinode1.y < height
-                {
+                if antinode1.in_bounds(width, height) {
                     antinodes.insert(antinode1);
                 }
-                if antinode2.x >= 0
-                    && antinode2.x < width
-                    && antinode2.y >= 0
-                    && antinode2.y < height
-                {
+                if antinode2.in_bounds(width, height) {
                     antinodes.insert(antinode2);
                 }
             }
@@ -77,8 +58,8 @@ fn calculate_antinodes(
 
 fn calculate_antinodes_part2(
     antennas: &HashMap<char, Vec<Point>>,
-    width: i32,
-    height: i32,
+    width: isize,
+    height: isize,
 ) -> HashSet<Point> {
     let mut antinodes = HashSet::new();
 
@@ -99,28 +80,21 @@ fn calculate_antinodes_part2(
                 let p2 = positions[j];
 
                 // Get smallest step size using GCD
-                let dx = p2.x - p1.x;
-                let dy = p2.y - p1.y;
-                let gcd = gcd(dx.abs(), dy.abs()).max(1);
-                let step_x = dx / gcd;
-                let step_y = dy / gcd;
+                let diff = p2 - p1;
+                let gcd = gcd(diff.x.abs() as i32, diff.y.abs() as i32).max(1);
+                let step = (diff.x / gcd as isize, diff.y / gcd as isize);
 
                 // Add all points on the line
-                let mut p = Point { x: p1.x, y: p1.y };
-                while p.x >= 0 && p.x < width && p.y >= 0 && p.y < height {
+                let mut p = p1;
+                while p.in_bounds(width, height) {
                     antinodes.insert(p);
-                    p.x += step_x;
-                    p.y += step_y;
+                    p += step;
                 }
 
-                let mut p = Point {
-                    x: p1.x - step_x,
-                    y: p1.y - step_y,
-                };
-                while p.x >= 0 && p.x < width && p.y >= 0 && p.y < height {
+                let mut p = Point::new(p1.x - step.0, p1.y - step.1);
+                while p.in_bounds(width, height) {
                     antinodes.insert(p);
-                    p.x -= step_x;
-                    p.y -= step_y;
+                    p -= step;
                 }
             }
         }
