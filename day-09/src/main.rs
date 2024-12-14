@@ -8,8 +8,8 @@ struct FileBlock {
 
 #[derive(Debug, Clone)]
 enum DiskEntry {
-    FileBlock(FileBlock),
-    FreeSpace(usize),
+    File(FileBlock),
+    Free(usize),
 }
 
 struct Disk {
@@ -25,43 +25,38 @@ impl Disk {
         }
     }
 
-    fn add_file_block(&mut self, size: usize) {
-        self.entries.push(DiskEntry::FileBlock(FileBlock {
-            id: self.next_id,
-            size,
-        }));
-        self.next_id += 1;
-    }
+    fn add_entry(&mut self, size: usize, is_file: bool) {
+        let entry = if is_file {
+            DiskEntry::File(FileBlock {
+                id: self.next_id,
+                size,
+            })
+        } else {
+            DiskEntry::Free(size)
+        };
 
-    fn add_free_space(&mut self, size: usize) {
-        self.entries.push(DiskEntry::FreeSpace(size));
+        if is_file {
+            self.next_id += 1;
+        }
+        self.entries.push(entry);
     }
 
     fn layout(&self) -> Vec<Option<usize>> {
-        let mut result = Vec::new();
-        for entry in &self.entries {
-            match entry {
-                DiskEntry::FileBlock(file) => {
-                    for _ in 0..file.size {
-                        result.push(Some(file.id));
-                    }
-                }
-                DiskEntry::FreeSpace(size) => {
-                    for _ in 0..*size {
-                        result.push(None);
-                    }
-                }
-            }
-        }
-        result
+        self.entries
+            .iter()
+            .flat_map(|entry| match entry {
+                DiskEntry::File(file) => vec![Some(file.id); file.size],
+                DiskEntry::Free(size) => vec![None; *size],
+            })
+            .collect()
     }
 
     fn defragmented(&self) -> Vec<Option<usize>> {
         let mut layout = self.layout();
 
-        loop {
-            let mut moved = false;
-
+        let mut changed = true;
+        while changed {
+            changed = false;
             for i in (0..layout.len()).rev() {
                 if let Some(id) = layout[i] {
                     if let Some(free_idx) =
@@ -69,17 +64,12 @@ impl Disk {
                     {
                         layout[free_idx] = Some(id);
                         layout[i] = None;
-                        moved = true;
+                        changed = true;
                         break;
                     }
                 }
             }
-
-            if !moved {
-                break;
-            }
         }
-
         layout
     }
 
@@ -94,19 +84,16 @@ impl Disk {
                 }
             }
         }
-
         layout
     }
 
     fn find_file_bounds(&self, layout: &[Option<usize>], file_id: usize) -> Option<(usize, usize)> {
-        let start_idx = layout.iter().position(|&block| block == Some(file_id))?;
-
-        let size = layout[start_idx..]
+        let start = layout.iter().position(|&block| block == Some(file_id))?;
+        let size = layout[start..]
             .iter()
             .take_while(|&&block| block == Some(file_id))
             .count();
-
-        Some((start_idx, size))
+        Some((start, size))
     }
 
     fn find_best_position(
@@ -152,44 +139,35 @@ impl Disk {
         size: usize,
         file_id: usize,
     ) {
-        (from..from + size).for_each(|i| {
-            layout[i] = None;
-        });
-        for i in 0..size {
-            layout[to + i] = Some(file_id);
-        }
-    }
-
-    fn calculate_checksum(defragged: &[Option<usize>]) -> usize {
-        defragged
-            .iter()
-            .enumerate()
-            .filter_map(|(pos, id)| id.map(|id| pos * id))
-            .sum()
+        layout[from..from + size].fill(None);
+        layout[to..to + size].fill(Some(file_id));
     }
 }
 
+fn calculate_checksum(layout: &[Option<usize>]) -> usize {
+    layout
+        .iter()
+        .enumerate()
+        .filter_map(|(pos, &id)| id.map(|id| pos * id))
+        .sum()
+}
+
 fn main() {
-    let input = INPUT
+    let disk = INPUT
         .trim()
         .chars()
-        .map(|c| c.to_digit(10).unwrap() as usize)
-        .collect::<Vec<_>>();
+        .enumerate()
+        .fold(Disk::new(), |mut disk, (i, c)| {
+            disk.add_entry(c.to_digit(10).unwrap() as usize, i % 2 == 0);
+            disk
+        });
 
-    let mut disk = Disk::new();
-    for (i, &num) in input.iter().enumerate() {
-        match i % 2 {
-            0 => disk.add_file_block(num),
-            1 => disk.add_free_space(num),
-            _ => unreachable!(),
-        }
-    }
-
-    let defragged = disk.defragmented();
-    let checksum = Disk::calculate_checksum(&defragged);
-    println!("Part 1 Checksum: {}", checksum);
-
-    let defragged_files = disk.defragmented_keep_files();
-    let checksum = Disk::calculate_checksum(&defragged_files);
-    println!("Part 2 Checksum: {}", checksum);
+    println!(
+        "Part 1 Checksum: {}",
+        calculate_checksum(&disk.defragmented())
+    );
+    println!(
+        "Part 2 Checksum: {}",
+        calculate_checksum(&disk.defragmented_keep_files())
+    );
 }
