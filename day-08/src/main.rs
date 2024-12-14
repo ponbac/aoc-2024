@@ -12,10 +12,10 @@ fn parse_input(input: &str) -> (HashMap<char, Vec<Point>>, isize, isize) {
     for (y, line) in input.lines().enumerate() {
         for (x, c) in line.chars().enumerate() {
             if c != '.' {
-                antennas.entry(c).or_default().push(Point::new(
-                    x as isize,
-                    y as isize,
-                ));
+                antennas
+                    .entry(c)
+                    .or_default()
+                    .push(Point::new(x as isize, y as isize));
             }
         }
     }
@@ -36,10 +36,8 @@ fn calculate_antinodes(
                 let p1 = positions[i];
                 let p2 = positions[j];
 
-                // Calculate vector between points
                 let diff = p2 - p1;
 
-                // Add points where one antenna is twice as far as the other
                 let antinode1 = p2 + (diff.x, diff.y);
                 let antinode2 = p1 - (diff.x, diff.y);
 
@@ -64,27 +62,19 @@ fn calculate_antinodes_part2(
     let mut antinodes = HashSet::new();
 
     for positions in antennas.values() {
-        if positions.len() < 2 {
-            continue;
-        }
-
-        // Add antenna positions as antinodes
         for &p in positions {
             antinodes.insert(p);
         }
 
-        // Add all collinear points
         for i in 0..positions.len() {
             for j in i + 1..positions.len() {
                 let p1 = positions[i];
                 let p2 = positions[j];
 
-                // Get smallest step size using GCD
                 let diff = p2 - p1;
-                let gcd = gcd(diff.x.abs() as i32, diff.y.abs() as i32).max(1);
+                let gcd = gcd(diff.x.abs() as i32, diff.y.abs() as i32);
                 let step = (diff.x / gcd as isize, diff.y / gcd as isize);
 
-                // Add all points on the line
                 let mut p = p1;
                 while p.in_bounds(width, height) {
                     antinodes.insert(p);
