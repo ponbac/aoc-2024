@@ -72,8 +72,8 @@ fn calculate_antinodes_part2(
                 let p2 = positions[j];
 
                 let diff = p2 - p1;
-                let gcd = gcd(diff.x.abs() as i32, diff.y.abs() as i32);
-                let step = (diff.x / gcd as isize, diff.y / gcd as isize);
+                let gcd = gcd(diff.x, diff.y);
+                let step = (diff.x / gcd, diff.y / gcd);
 
                 let mut p = p1;
                 while p.in_bounds(width, height) {
@@ -93,7 +93,7 @@ fn calculate_antinodes_part2(
     antinodes
 }
 
-fn gcd(mut a: i32, mut b: i32) -> i32 {
+fn gcd(mut a: isize, mut b: isize) -> isize {
     while b != 0 {
         let temp = b;
         b = a % b;
