@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use aoc::Point;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 const INPUT: &str = include_str!("../input1.txt");
 
@@ -47,7 +48,7 @@ impl Arena {
     }
 
     fn is_christmas_tree(&self) -> bool {
-        for y in 0..self.height {
+        (0..self.height).into_par_iter().any(|y| {
             let mut current_streak = 0;
             let mut max_streak = 0;
 
@@ -61,11 +62,8 @@ impl Arena {
                 }
             }
 
-            if max_streak >= 8 {
-                return true;
-            }
-        }
-        false
+            max_streak >= 8
+        })
     }
 }
 
