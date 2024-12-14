@@ -62,10 +62,8 @@ impl Disk {
         loop {
             let mut moved = false;
 
-            // Find rightmost file block
             for i in (0..layout.len()).rev() {
                 if let Some(id) = layout[i] {
-                    // Find leftmost free space before this file block
                     if let Some(free_idx) =
                         (0..i).find(|&j| layout[j].is_none() && (j == 0 || layout[j - 1].is_some()))
                     {
