@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Instant,
+};
 
 use aoc::Point;
 
@@ -103,10 +106,12 @@ fn gcd(mut a: isize, mut b: isize) -> isize {
 }
 
 fn main() {
+    let start = Instant::now();
     let (antennas, width, height) = parse_input(INPUT);
     println!(
         "Part 1: {}\nPart 2: {}",
         calculate_antinodes(&antennas, width, height).len(),
         calculate_antinodes_part2(&antennas, width, height).len()
     );
+    println!("Time: {:?}", start.elapsed());
 }
