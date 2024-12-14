@@ -53,23 +53,15 @@ impl Disk {
 
     fn defragmented(&self) -> Vec<Option<usize>> {
         let mut layout = self.layout();
-
-        let mut changed = true;
-        while changed {
-            changed = false;
-            for i in (0..layout.len()).rev() {
-                if let Some(id) = layout[i] {
-                    if let Some(free_idx) =
-                        (0..i).find(|&j| layout[j].is_none() && (j == 0 || layout[j - 1].is_some()))
-                    {
-                        layout[free_idx] = Some(id);
-                        layout[i] = None;
-                        changed = true;
-                        break;
-                    }
-                }
-            }
+        for i in (0..layout.len()).rev() {
+            layout[i].and_then(|id| {
+                (0..i).find(|&j| layout[j].is_none()).map(|free_idx| {
+                    layout[free_idx] = Some(id);
+                    layout[i] = None;
+                })
+            });
         }
+
         layout
     }
 
@@ -78,11 +70,13 @@ impl Disk {
         let file_ids: Vec<usize> = (0..self.next_id).rev().collect();
 
         for &file_id in &file_ids {
-            if let Some((current_pos, size)) = self.find_file_bounds(&layout, file_id) {
-                if let Some(best_pos) = self.find_best_position(&layout, current_pos, size) {
-                    self.move_file_block(&mut layout, current_pos, best_pos, size, file_id);
-                }
-            }
+            self.find_file_bounds(&layout, file_id)
+                .and_then(|(current_pos, size)| {
+                    self.find_best_position(&layout, current_pos, size)
+                        .map(|best_pos| {
+                            self.move_file_block(&mut layout, current_pos, best_pos, size, file_id)
+                        })
+                });
         }
         layout
     }
