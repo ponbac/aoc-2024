@@ -79,6 +79,12 @@ impl From<(isize, isize)> for Point {
     }
 }
 
+impl From<(usize, usize)> for Point {
+    fn from(tuple: (usize, usize)) -> Self {
+        Self::new(tuple.0 as isize, tuple.1 as isize)
+    }
+}
+
 // Implement addition with Direction
 impl Add<Direction> for Point {
     type Output = Point;

@@ -27,16 +27,15 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
 "#;
 const EXAMPLE2: &str = r#"
-########
-#..O.O.#
-##@.O..#
-#...O..#
-#.#.O..#
-#...O..#
-#......#
-########
+#######
+#...#.#
+#.....#
+#..OO@#
+#..O..#
+#.....#
+#######
 
-<^^>>>vv<v>>v<<
+<vv<<^^<<^^
 "#;
 
 struct Grid {
@@ -129,18 +128,74 @@ impl Grid {
                 }
                 _ => self.move_robot(direction),
             }
-            // println!("{}", self);
         }
     }
 
+    fn run_path_part_2(&mut self, path: &[Direction]) {
+        for direction in path {
+            let next_pos = self.robot + *direction;
+            match self.get(next_pos) {
+                '#' => continue,
+                '[' | ']' => {
+                    todo!()
+                }
+                _ => self.move_robot(direction),
+            }
+        }
+    }
+
+    fn can_move_wide_box(&self, left_pos: &Point, direction: &Direction) -> bool {
+        todo!()
+    }
+
+    fn move_wide_box(&mut self, left_pos: &Point, direction: &Direction) {
+        todo!()
+    }
+
+    fn widen_grid(&mut self) {
+        let height = self.cells.len();
+        let width = self.cells[0].len();
+        let mut new_cells = vec![vec!['.'; width * 2]; height];
+
+        // Process each cell in the grid
+        (0..height).for_each(|y| {
+            for x in 0..width {
+                let new_x = x * 2;
+                match self.get((x, y)) {
+                    '#' => {
+                        new_cells[y][new_x] = '#';
+                        new_cells[y][new_x + 1] = '#';
+                    }
+                    'O' if y > 0 && y < height - 1 && x > 0 && x < width - 1 => {
+                        new_cells[y][new_x] = '[';
+                        new_cells[y][new_x + 1] = ']';
+                    }
+                    '@' if y > 0 && y < height - 1 && x > 0 && x < width - 1 => {
+                        new_cells[y][new_x] = '@';
+                        new_cells[y][new_x + 1] = '.';
+                    }
+                    _ => (), // Leave as '.'
+                }
+            }
+        });
+
+        // Update positions
+        self.robot.x *= 2;
+        self.boxes = self
+            .boxes
+            .iter()
+            .map(|p| Point::new(p.x * 2, p.y))
+            .collect();
+        self.cells = new_cells;
+    }
+
     fn gps_sum(&self) -> isize {
-        println!("{} boxes: {:?}", self.boxes.len(), self.boxes);
         self.boxes.iter().map(|point| 100 * point.y + point.x).sum()
     }
 }
 
 fn main() {
-    let (grid, path) = INPUT.trim().split_once("\n\n").unwrap();
+    let (grid, path) = EXAMPLE.trim().split_once("\n\n").unwrap();
     let mut grid = Grid::new(grid);
     let path: Vec<Direction> = path
         .lines()
@@ -148,10 +203,20 @@ fn main() {
         .map(|c| c.into())
         .collect();
 
+    println!("Part 1:");
     println!("{}", grid);
     grid.run_path(&path);
     println!("{}", grid);
     println!("Part 1: {}", grid.gps_sum());
+
+    // Part 2 - Create a new grid from the original input
+    let mut grid2 = Grid::new(EXAMPLE2.trim().split_once("\n\n").unwrap().0);
+    grid2.widen_grid();
+    println!("\nPart 2:");
+    println!("{}", grid2);
+    grid2.run_path_part_2(&path);
+    println!("{}", grid2);
+    println!("Part 2: {}", grid2.gps_sum());
 }
 
 impl Display for Grid {
