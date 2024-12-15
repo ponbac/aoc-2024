@@ -54,3 +54,15 @@ impl std::ops::Sub<Direction> for (isize, isize) {
         (self.0 - step.0, self.1 - step.1)
     }
 }
+
+impl From<char> for Direction {
+    fn from(c: char) -> Self {
+        match c {
+            'U' | '^' => Direction::Up,
+            'R' | '>' => Direction::Right,
+            'D' | 'v' => Direction::Down,
+            'L' | '<' => Direction::Left,
+            _ => panic!("Invalid direction character: {}", c),
+        }
+    }
+}
